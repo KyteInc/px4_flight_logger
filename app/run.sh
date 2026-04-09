@@ -11,9 +11,8 @@ if [ ! -d ${DATA_PATH} ]; then
 	mkdir -p ${DATA_PATH}
 fi
 
-if [ ! -f ${DATA_PATH}/logs.sqlite ]; then
-	python3 ${WORK_PATH}/setup_db.py
-fi
+# setup_db.py creates missing tables and performs in-place schema upgrades
+python3 ${WORK_PATH}/setup_db.py
 
 if [ -n "${USE_PROXY}" ]; then
 	echo "Use Proxy!"

@@ -47,6 +47,10 @@ with con:
                 "Title TEXT, "
                 "Description TEXT, "
                 "OriginalFilename TEXT, "
+                "UploadedBy TEXT, " # uploader identity
+                "Pilot TEXT, " # pilot identity
+                "Drone TEXT, " # drone identifier/name
+                "FlightDate TEXT, " # date of flight in YYYY-MM-DD
                 "Date TIMESTAMP, " # date & time when uploaded
                 "AllowForAnalysis INTEGER, " # if 1 allow for statistical analysis
                 "Obfuscated INTEGER, "
@@ -67,6 +71,18 @@ with con:
         if not 'Email' in column_names:
             print('Adding column Email')
             cur.execute("ALTER TABLE Logs ADD COLUMN Email TEXT DEFAULT ''")
+        if not 'UploadedBy' in column_names:
+            print('Adding column UploadedBy')
+            cur.execute("ALTER TABLE Logs ADD COLUMN UploadedBy TEXT DEFAULT ''")
+        if not 'Pilot' in column_names:
+            print('Adding column Pilot')
+            cur.execute("ALTER TABLE Logs ADD COLUMN Pilot TEXT DEFAULT ''")
+        if not 'Drone' in column_names:
+            print('Adding column Drone')
+            cur.execute("ALTER TABLE Logs ADD COLUMN Drone TEXT DEFAULT ''")
+        if not 'FlightDate' in column_names:
+            print('Adding column FlightDate')
+            cur.execute("ALTER TABLE Logs ADD COLUMN FlightDate TEXT DEFAULT ''")
         if not 'WindSpeed' in column_names:
             print('Adding column WindSpeed')
             cur.execute("ALTER TABLE Logs ADD COLUMN WindSpeed INT DEFAULT -1")
@@ -136,6 +152,12 @@ with con:
     # Indexes for browse/search performance
     cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_public_source_date "
                 "ON Logs(Public, Source, Date DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_drone_date "
+                "ON Logs(Drone, Date DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_pilot_date "
+                "ON Logs(Pilot, Date DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_uploaded_by_date "
+                "ON Logs(UploadedBy, Date DESC)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_logsgenerated_hardware "
                 "ON LogsGenerated(Hardware)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_logsgenerated_software "
@@ -154,4 +176,3 @@ with con:
                 "CONSTRAINT UUID_PK PRIMARY KEY (UUID))")
 
 con.close()
-

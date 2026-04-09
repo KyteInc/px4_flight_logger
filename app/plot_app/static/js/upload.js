@@ -23,6 +23,10 @@ function saveSetting(key) {
 }
 
 function saveSettings() {
+	saveSetting('uploadedBy');
+	saveSetting('pilot');
+	saveSetting('drone');
+	saveSetting('flightDate');
 	saveSetting('email');
 	saveSetting('access');
 }
@@ -43,6 +47,22 @@ function updateAccess() {
 function validateForm() {
     var valid = true;
     var error_html = "";
+    if (document.getElementById('uploadedBy').value.trim().length == 0) {
+        error_html += "Uploaded By, "
+        valid = false;
+    }
+    if (document.getElementById('pilot').value.trim().length == 0) {
+        error_html += "Pilot, "
+        valid = false;
+    }
+    if (document.getElementById('drone').value.trim().length == 0) {
+        error_html += "Drone, "
+        valid = false;
+    }
+    if (document.getElementById('flightDate').value.trim().length == 0) {
+        error_html += "Flight Date, "
+        valid = false;
+    }
     if (document.getElementById('access').value == "notset") {
         error_html += "Access, "
         valid = false;
@@ -72,9 +92,19 @@ function validateForm() {
 
 
 $(function() { // on startup
+	restoreSetting('uploadedBy');
+	restoreSetting('pilot');
+	restoreSetting('drone');
+	restoreSetting('flightDate');
 	restoreSetting('email');
 	restoreSetting('access');
 	updateAccess();
+
+	if ($("#flightDate").val().length == 0) {
+		var now = new Date();
+		var localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+		$("#flightDate").val(localDate.toISOString().slice(0, 10));
+	}
 
     // Ajax file upload with progress updates
     $("#upload-form").on('submit', function (e) {
@@ -121,4 +151,3 @@ $(function() { // on startup
         });
     });
 });
-

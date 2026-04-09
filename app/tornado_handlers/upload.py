@@ -38,6 +38,12 @@ UPLOAD_TEMPLATE = 'upload.html'
 
 #pylint: disable=attribute-defined-outside-init,too-many-statements, unused-argument
 
+def _decode_form_field(form_data, field_name, default=''):
+    """Decode an utf-8 form field and strip surrounding whitespace."""
+    if field_name not in form_data:
+        return default
+    return form_data[field_name].decode("utf-8").strip()
+
 
 def update_vehicle_db_entry(cur, ulog, log_id, vehicle_name):
     """
@@ -125,30 +131,67 @@ class UploadHandler(TornadoRequestHandlerBase):
                     ['description', 'email',
                      'allowForAnalysis', 'obfuscated', 'source', 'type',
                      'feedback', 'windSpeed', 'rating', 'videoUrl', 'public',
-                     'vehicleName', 'redirect'])
-                description = escape(form_data['description'].decode("utf-8"))
-                email = form_data['email'].decode("utf-8")
+                     'vehicleName', 'redirect', 'uploadedBy', 'pilot', 'drone',
+                     'flightDate'])
+                description = escape(_decode_form_field(form_data, 'description'))
+                email = _decode_form_field(form_data, 'email')
                 upload_type = 'personal'
                 if 'type' in form_data:
-                    upload_type = form_data['type'].decode("utf-8")
+                    upload_type = _decode_form_field(form_data, 'type')
                 source = 'webui'
                 title = '' # may be used in future...
                 if 'source' in form_data:
-                    source = form_data['source'].decode("utf-8")
+                    source = _decode_form_field(form_data, 'source')
+
+                uploaded_by = escape(_decode_form_field(form_data, 'uploadedBy'))
+                pilot = escape(_decode_form_field(form_data, 'pilot'))
+                drone = escape(_decode_form_field(form_data, 'drone'))
+                flight_date = _decode_form_field(form_data, 'flightDate')
+
+                if source == 'CI':
+                    if len(uploaded_by) == 0:
+                        uploaded_by = 'CI'
+                    if len(pilot) == 0:
+                        pilot = 'CI'
+                    if len(drone) == 0:
+                        drone = 'CI'
+                    if len(flight_date) == 0:
+                        flight_date = datetime.date.today().isoformat()
+
+                missing_fields = []
+                if len(uploaded_by) == 0:
+                    missing_fields.append('Uploaded By')
+                if len(pilot) == 0:
+                    missing_fields.append('Pilot')
+                if len(drone) == 0:
+                    missing_fields.append('Drone')
+                if len(flight_date) == 0:
+                    missing_fields.append('Flight Date')
+                if len(missing_fields) > 0:
+                    raise CustomHTTPError(
+                        400, 'Missing required fields: ' + ', '.join(missing_fields))
+
+                try:
+                    flight_date = datetime.datetime.strptime(
+                        flight_date, '%Y-%m-%d').date().isoformat()
+                except ValueError as e:
+                    raise CustomHTTPError(
+                        400, 'Invalid Flight Date format. Use YYYY-MM-DD.') from e
+
                 obfuscated = 0
                 if 'obfuscated' in form_data:
-                    if form_data['obfuscated'].decode("utf-8") == 'true':
+                    if _decode_form_field(form_data, 'obfuscated') == 'true':
                         obfuscated = 1
                 allow_for_analysis = 0
                 if 'allowForAnalysis' in form_data:
-                    if form_data['allowForAnalysis'].decode("utf-8") == 'true':
+                    if _decode_form_field(form_data, 'allowForAnalysis') == 'true':
                         allow_for_analysis = 1
                 feedback = ''
                 if 'feedback' in form_data:
-                    feedback = escape(form_data['feedback'].decode("utf-8"))
+                    feedback = escape(_decode_form_field(form_data, 'feedback'))
                 should_redirect = source != 'QGroundControl'
                 if 'redirect' in form_data:
-                    should_redirect = form_data['redirect'].decode("utf-8") == 'true'
+                    should_redirect = _decode_form_field(form_data, 'redirect') == 'true'
                 wind_speed = -1
                 rating = ''
                 stored_email = ''
@@ -160,24 +203,24 @@ class UploadHandler(TornadoRequestHandlerBase):
                 if upload_type == 'flightreport':
                     if 'windSpeed' in form_data:
                         try:
-                            wind_speed = int(escape(form_data['windSpeed'].decode("utf-8")))
+                            wind_speed = int(escape(_decode_form_field(form_data, 'windSpeed')))
                         except ValueError:
                             wind_speed = -1
                     if 'rating' in form_data:
-                        rating = escape(form_data['rating'].decode("utf-8"))
+                        rating = escape(_decode_form_field(form_data, 'rating'))
                         if rating == 'notset': rating = ''
                     # get video url & check if valid
                     if 'videoUrl' in form_data:
-                        video_url = escape(form_data['videoUrl'].decode("utf-8"), quote=True)
+                        video_url = escape(_decode_form_field(form_data, 'videoUrl'), quote=True)
                         if not validate_url(video_url):
                             video_url = ''
                     if 'vehicleName' in form_data:
-                        vehicle_name = escape(form_data['vehicleName'].decode("utf-8"))
+                        vehicle_name = escape(_decode_form_field(form_data, 'vehicleName'))
 
                     # always allow for statistical analysis
                     allow_for_analysis = 1
                     if 'public' in form_data:
-                        if form_data['public'].decode("utf-8") == 'true':
+                        if _decode_form_field(form_data, 'public') == 'true':
                             is_public = 1
 
                 file_obj = self.multipart_streamer.get_parts_by_name('filearg')[0]
@@ -238,12 +281,13 @@ class UploadHandler(TornadoRequestHandlerBase):
                     cur = con.cursor()
                     cur.execute(
                         'insert into Logs (Id, Title, Description, '
-                        'OriginalFilename, Date, AllowForAnalysis, Obfuscated, '
+                        'OriginalFilename, UploadedBy, Pilot, Drone, FlightDate, '
+                        'Date, AllowForAnalysis, Obfuscated, '
                         'Source, Email, WindSpeed, Rating, Feedback, Type, '
                         'videoUrl, ErrorLabels, Public, Token) values '
-                        '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         [log_id, title, description, upload_file_name,
-                         datetime.datetime.now(), allow_for_analysis,
+                         uploaded_by, pilot, drone, flight_date, datetime.datetime.now(), allow_for_analysis,
                          obfuscated, source, stored_email, wind_speed, rating,
                          feedback, upload_type, video_url, error_labels, is_public, token])
 
@@ -274,6 +318,10 @@ class UploadHandler(TornadoRequestHandlerBase):
                 info['uuid'] = ''
                 info['software'] = ''
                 info['rating'] = rating
+                info['uploaded_by'] = uploaded_by
+                info['pilot'] = pilot
+                info['drone'] = drone
+                info['flight_date'] = flight_date
                 if len(vehicle_name) > 0:
                     info['vehicle_name'] = vehicle_name
 
@@ -341,4 +389,3 @@ class UploadHandler(TornadoRequestHandlerBase):
 
             finally:
                 self.multipart_streamer.release_parts()
-

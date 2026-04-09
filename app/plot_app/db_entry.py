@@ -16,6 +16,10 @@ class DBData:
         self.description = ''
         self.feedback = ''
         self.type = 'personal'
+        self.uploaded_by = ''
+        self.pilot = ''
+        self.drone = ''
+        self.flight_date = ''
         self.wind_speed = -1
         self.rating = ''
         self.video_url = ''
@@ -47,6 +51,10 @@ class DBData:
         jsondict['description'] = self.description
         jsondict['feedback'] = self.feedback
         jsondict['type'] = self.type
+        jsondict['uploaded_by'] = self.uploaded_by
+        jsondict['pilot'] = self.pilot
+        jsondict['drone'] = self.drone
+        jsondict['flight_date'] = self.flight_date
         jsondict['wind_speed'] = self.wind_speed
         jsondict['rating'] = self.rating
         jsondict['video_url'] = self.video_url
@@ -171,4 +179,3 @@ class DBVehicleData:
         self.log_id = ''
         self.name = ''
         self.flight_time = 0
-

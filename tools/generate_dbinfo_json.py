@@ -62,8 +62,8 @@ def generate(db_path, airframes, download_url_prefix=''):
 
     # All public non-CI logs
     cur.execute(
-        'SELECT Id, Date, Description, WindSpeed, Rating, VideoUrl, '
-        'ErrorLabels, Source, Feedback, Type '
+        'SELECT Id, Date, Description, UploadedBy, Pilot, Drone, FlightDate, '
+        'WindSpeed, Rating, VideoUrl, ErrorLabels, Source, Feedback, Type '
         'FROM Logs WHERE Public = 1 AND NOT Source = "CI"'
     )
     logs = cur.fetchall()
@@ -82,8 +82,8 @@ def generate(db_path, airframes, download_url_prefix=''):
 
         # Parse fields exactly as the app does
         error_labels = sorted(
-            [int(x) for x in row[6].split(',') if len(x) > 0]
-        ) if row[6] else []
+            [int(x) for x in row[10].split(',') if len(x) > 0]
+        ) if row[10] else []
 
         flight_modes = {int(x) for x in gen[9].split(',') if len(x) > 0}
         flight_mode_durations = [
@@ -106,13 +106,17 @@ def generate(db_path, airframes, download_url_prefix=''):
             'log_id': log_id,
             'log_date': str(row[1])[:10],
             'description': row[2] if row[2] else '',
-            'feedback': row[8] if row[8] else '',
-            'type': row[9] if row[9] else 'personal',
-            'wind_speed': row[3] if row[3] is not None else -1,
-            'rating': row[4] if row[4] else '',
-            'video_url': row[5] if row[5] else '',
+            'uploaded_by': row[3] if row[3] else '',
+            'pilot': row[4] if row[4] else '',
+            'drone': row[5] if row[5] else '',
+            'flight_date': row[6] if row[6] else '',
+            'feedback': row[12] if row[12] else '',
+            'type': row[13] if row[13] else 'personal',
+            'wind_speed': row[7] if row[7] is not None else -1,
+            'rating': row[8] if row[8] else '',
+            'video_url': row[9] if row[9] else '',
             'error_labels': error_labels,
-            'source': row[7] if row[7] else '',
+            'source': row[11] if row[11] else '',
             # From LogsGenerated table
             'duration_s': int(gen[1]) if gen[1] else 0,
             'mav_type': gen[2] if gen[2] else '',

@@ -36,7 +36,8 @@ class DBInfoHandler(tornado.web.RequestHandler):
         db_tuples = cur.fetchall()
         vehicle_table = {db_tuple[0]: db_tuple[1] for db_tuple in db_tuples}
 
-        cur.execute('SELECT Id, Date, Description, WindSpeed, Rating, VideoUrl, ErrorLabels, '
+        cur.execute('SELECT Id, Date, Description, UploadedBy, Pilot, Drone, FlightDate, '
+                    'WindSpeed, Rating, VideoUrl, ErrorLabels, '
                     'Source, Feedback, Type FROM Logs WHERE Public = 1 AND NOT Source = "CI"')
         # need to fetch all here, because we will do more SQL calls while
         # iterating (having multiple cursor's does not seem to work)
@@ -48,14 +49,18 @@ class DBInfoHandler(tornado.web.RequestHandler):
             jsondict['log_id'] = log_id
             jsondict['log_date'] = db_tuple[1].strftime('%Y-%m-%d')
             db_data.description = db_tuple[2]
-            db_data.wind_speed = db_tuple[3]
-            db_data.rating = db_tuple[4]
-            db_data.video_url = db_tuple[5]
-            db_data.error_labels = sorted([int(x) for x in db_tuple[6].split(',') if len(x) > 0]) \
-                if db_tuple[6] else []
-            db_data.source = db_tuple[7]
-            db_data.feedback = db_tuple[8]
-            db_data.type = db_tuple[9]
+            db_data.uploaded_by = db_tuple[3]
+            db_data.pilot = db_tuple[4]
+            db_data.drone = db_tuple[5]
+            db_data.flight_date = db_tuple[6]
+            db_data.wind_speed = db_tuple[7]
+            db_data.rating = db_tuple[8]
+            db_data.video_url = db_tuple[9]
+            db_data.error_labels = sorted([int(x) for x in db_tuple[10].split(',') if len(x) > 0]) \
+                if db_tuple[10] else []
+            db_data.source = db_tuple[11]
+            db_data.feedback = db_tuple[12]
+            db_data.type = db_tuple[13]
             jsondict.update(db_data.to_json_dict())
 
             db_data_gen = get_generated_db_data_from_log(log_id, con, cur)
@@ -78,4 +83,3 @@ class DBInfoHandler(tornado.web.RequestHandler):
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(jsonlist))
-
