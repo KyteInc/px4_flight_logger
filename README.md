@@ -8,6 +8,11 @@ It uses the [bokeh](http://bokeh.pydata.org) library for plotting and the
 
 Flight Review is deployed at https://review.px4.io.
 
+## Data Schema
+
+The canonical database schema is documented in
+[`docs/data-schema.md`](docs/data-schema.md).
+
 ![Plot View](screenshots/plot_view.png)
 
 ## 3D View
