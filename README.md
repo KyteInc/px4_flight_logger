@@ -170,7 +170,10 @@ Edit the `.env` file according to your setup:
 
 - PORT - The number of port, what listen service in docker, default 5006
 - USE_PROXY - The set his, if you use reverse proxy (Nginx, ...)
-- DOMAIN - The address domain name for origin, default = *
+- DOMAIN - The public domain name for the Bokeh websocket origin, default = *
+- BOKEH_ALLOW_WS_ORIGIN - Optional comma-separated list of additional
+  websocket origins. Use this when several hosts or local ports should be
+  allowed, for example `localhost,localhost:5006,127.0.0.1:5006`.
 - CERT_PATH - The SSL certificate volume path
 - EMAIL - Email for challenging Let's Encrypt DNS
 
@@ -191,8 +194,10 @@ docker build -t px4flightreview -f Dockerfile .
 Run the following command to start docker container.
 Please modify the `.env` and add `app/config_user.ini` with respective stages.
 
-Uncomment the `BOKEH_ALLOW_WS_ORIGIN` with your local IP Address when
-developing, this is for the bokeh application's websocket to work.
+Set `DOMAIN` to the public host name in production, for example
+`logs.example.com`. Uncomment `BOKEH_ALLOW_WS_ORIGIN` with your local IP
+address or localhost ports when developing; this is for the Bokeh
+application's websocket to work.
 
 ### Development
 ```bash
